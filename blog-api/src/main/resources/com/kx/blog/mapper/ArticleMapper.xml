@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.kx.blog.mapper.ArticleMapper">
+<!--    int updateNumById(Article article);-->
+    <update id="updateNumById">
+        update ms_article
+        <set>
+            <if test="viewCounts != null">
+                view_counts = #{viewCounts},
+            </if>
+            <if test="commentCounts != null">
+                comment_counts = #{commentCounts}
+            </if>
+        </set>
+        <where>
+            id = #{id}
+        </where>
+    </update>
+<!--    List<Archives> listArchives();-->
+<!--    每一个标签下都对应着该标签所对应的文章-->
+    <select id="listArchives" resultType="com.kx.blog.domain.dos.Archives">
+        select year(FROM_UNIXTIME(create_date/1000)) as year,month(FROM_UNIXTIME(create_date/1000)) as month, count(*) as count from ms_article
+        group by year,month
+    </select>
+
+<!--    归档文章列表-->
+<!--    IPage<Article> listArticle(Page<Article> page,-->
+<!--    Long categoryId,-->
+<!--    Long tagId,-->
+<!--    String year,-->
+<!--    String month);-->
+    <resultMap id="articleMap" type="com.kx.blog.domain.entity.Article">
+        <id column="id" property="id" />
+        <result column="author_id" property="authorId"/>
+        <result column="comment_counts" property="commentCounts"/>
+        <result column="create_date" property="createDate"/>
+        <result column="summary" property="summary"/>
+        <result column="title" property="title"/>
+        <result column="view_counts" property="viewCounts"/>
+        <result column="weight" property="weight"/>
+        <result column="body_id" property="bodyId"/>
+        <result column="category_id" property="categoryId"/>
+    </resultMap>
+    <select id="listArticle" resultMap="articleMap">
+        select * from ms_article
+        <where>
+            1 = 1
+            <if test="categoryId != null">
+                and category_id=#{categoryId}
+            </if>
+            <if test="tagId != null">
+                and id in (select article_id from ms_article_tag where tag_id=#{tagId})
+            </if>
+            <if test="year != null and year.length>0 and month != null and month.length>0">
+                and (FROM_UNIXTIME(create_date/1000,'%Y') =#{year} and FROM_UNIXTIME(create_date/1000,'%m')=#{month})
+            </if>
+        </where>
+        order by weight,create_date desc
+    </select>
+</mapper>
